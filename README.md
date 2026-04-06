@@ -1,45 +1,45 @@
-# AI Course Module
+# AI-модуль учебной платформы
 
-API-first AI module for educational course assistance.
+API-first AI-модуль для помощи по учебным курсам.
 
-This repository contains only the AI integration layer:
-- guarded RAG chat over indexed course materials
-- course ingestion and versioned indexing
-- PostgreSQL + pgvector persistence
-- local STT / TTS / avatar service wrappers
-- history, usage, telemetry, quotas, and prompt-injection protection
+Этот репозиторий содержит только AI-слой интеграции:
+- guarded RAG-чат по материалам курса
+- ingestion и версионную индексацию курсов
+- хранение в `PostgreSQL + pgvector`
+- локальные обёртки для `STT / TTS / avatar`
+- историю, usage, телеметрию, квоты и защиту от prompt injection
 
-The repository is intended to be integrated later into the main backend/frontend project through HTTP API.
+Репозиторий предназначен для последующей интеграции в основной backend/frontend проект через HTTP API.
 
-## What is included
+## Что входит в репозиторий
 
-- `app/api/*` - API routes for chat, ingestion, health, usage, telemetry, TTS, STT, avatar
+- `app/api/*` - API-роуты для чата, индексации, health, usage, telemetry, TTS, STT, avatar
 - `lib/*` - RAG, ingestion, retrieval, guardrails, persistence, quotas, redaction
-- `local-stt/*` - local STT microservice wrapper
-- `local-tts/*` - local TTS microservice wrapper
-- `local-avatar/*` - local avatar microservice wrapper
-- `prisma/schema.prisma` - database schema
-- `scripts/*` - setup, bootstrap, smoke tests
-- `docs/*` - integration documentation
-- `.env.example` - environment template
+- `local-stt/*` - обёртка локального STT-сервиса
+- `local-tts/*` - обёртка локального TTS-сервиса
+- `local-avatar/*` - обёртка локального avatar-сервиса
+- `prisma/schema.prisma` - схема базы данных
+- `scripts/*` - setup, bootstrap и smoke-тесты
+- `docs/*` - документация по интеграции
+- `.env.example` - шаблон переменных окружения
 
-## Main API endpoints
+## Основные API endpoint'ы
 
-- `POST /api/chat` - guarded RAG chat with SSE events: `meta`, `chunk`, `done`, `error`
-- `POST /api/course-indexes` - upload files, extract text/structure, chunk, embed, and create a versioned index
-- `GET /api/course-indexes?course_id=...` - list course index versions
-- `POST /api/course-indexes/activate` - activate a ready course index version
-- `GET /api/history` - session history
-- `GET /api/usage` - token/cost summary
-- `GET /api/telemetry` - redacted request telemetry
+- `POST /api/chat` - guarded RAG-чат с SSE-событиями: `meta`, `chunk`, `done`, `error`
+- `POST /api/course-indexes` - загрузка файлов, извлечение текста/структуры, chunking, embeddings и создание versioned index
+- `GET /api/course-indexes?course_id=...` - список версий индекса курса
+- `POST /api/course-indexes/activate` - активация готовой версии индекса
+- `GET /api/history` - история сессии
+- `GET /api/usage` - summary по токенам и стоимости
+- `GET /api/telemetry` - redacted telemetry запросов
 - `POST /api/transcribe` - STT proxy
-- `POST /api/tts` - Russian-only TTS proxy
-- `POST /api/avatar` - Russian-only avatar render proxy
+- `POST /api/tts` - TTS proxy только для русского языка
+- `POST /api/avatar` - avatar render proxy только для русского языка
 - `GET /api/health` - readiness/health
-- `GET /api/openapi` - machine-readable contract
-- `GET /api/openapi-view` - compact human-readable API overview
+- `GET /api/openapi` - машинно-читаемый контракт
+- `GET /api/openapi-view` - компактное человекочитаемое представление API
 
-## Supported educational sources
+## Поддерживаемые учебные источники
 
 - `PDF`
 - `PPTX`
@@ -47,64 +47,64 @@ The repository is intended to be integrated later into the main backend/frontend
 - `TXT`
 - `MD`
 - `CSV`
-- `video/audio` through local STT
+- `video/audio` через локальный STT
 
-## AI capabilities
+## AI-возможности
 
-- hybrid retrieval: embeddings + keyword scoring
-- structured citations and source snippets
-- SSE response streaming
-- local guardrails and moderation
-- prompt-injection filtering
-- retrieval sanitization and output guardrails
-- session history and telemetry
-- PostgreSQL + pgvector storage
-- versioned course indexes
+- гибридный retrieval: embeddings + keyword scoring
+- структурированные citations и source snippets
+- потоковая выдача ответа через SSE
+- локальные guardrails и moderation
+- защита от prompt injection
+- retrieval sanitization и output guardrails
+- история сессий и телеметрия
+- хранение в `PostgreSQL + pgvector`
+- версионность индексов курсов
 
-## Local setup
+## Локальный запуск
 
-1. Install Node dependencies:
+1. Установить Node-зависимости:
 
 ```bash
 npm install
 ```
 
-2. Copy env template:
+2. Создать `.env.local` из шаблона:
 
 ```powershell
 Copy-Item .env.example .env.local
 ```
 
-3. Fill at least:
+3. Заполнить минимум:
 - `OPENAI_API_KEY`
 - `DATABASE_URL`
 
-4. Setup database and `pgvector`:
+4. Настроить базу и `pgvector`:
 
 ```bash
 npm run db:setup
 ```
 
-If PostgreSQL does not yet contain the `vector` extension, install it once from an elevated PowerShell:
+Если PostgreSQL ещё не содержит extension `vector`, один раз установите его из PowerShell **от имени администратора**:
 
 ```powershell
 npm run db:install-pgvector
 ```
 
-5. Start all local services:
+5. Поднять все локальные сервисы:
 
 ```bash
 npm run start:all
 ```
 
-6. Run smoke tests:
+6. Прогнать smoke-тесты:
 
 ```bash
 npm run test:api
 ```
 
-## Deployment note
+## Примечание по деплою
 
-This repository is not the final product frontend/backend. It is the AI module designed to be integrated into the larger system and later deployed in Google Cloud behind the main application backend.
+Этот репозиторий не является финальным frontend/backend приложением. Это AI-модуль, который должен интегрироваться в большую систему и позже разворачиваться в Google Cloud за основным backend-приложением.
 
-See `docs/API_INTEGRATION.md` for request examples and integration details.
+Примеры запросов и детали интеграции смотри в `docs/API_INTEGRATION.md`.
