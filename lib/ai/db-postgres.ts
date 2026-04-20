@@ -25,10 +25,10 @@ function redact(value: string | null | undefined): string {
 }
 
 function jsonValue(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
 }
 
-function parseJsonArray<T>(value: Prisma.JsonValue | null | undefined, fallback: T): T {
+function parseJsonArray<T>(value: unknown, fallback: T): T {
   if (value === null || value === undefined) {
     return fallback;
   }
@@ -318,15 +318,13 @@ export async function getUsageSummary(apiKeyHash: string, window: 'day' | 'month
     select: { requests: true, tokens: true, costUsd: true },
   });
 
-  return rows.reduce(
-    (acc, row) => {
-      acc.requests += row.requests;
-      acc.tokens += row.tokens;
-      acc.cost_usd += row.costUsd;
-      return acc;
-    },
-    { requests: 0, tokens: 0, cost_usd: 0 },
-  );
+  const summary = { requests: 0, tokens: 0, cost_usd: 0 };
+  for (const row of rows as Array<{ requests: number; tokens: number; costUsd: number }>) {
+    summary.requests += row.requests;
+    summary.tokens += row.tokens;
+    summary.cost_usd += row.costUsd;
+  }
+  return summary;
 }
 
 export async function getHistory(sessionId: string, limit = 50, cursor?: string | null) {

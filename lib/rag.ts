@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 import { getLectureContent } from '@/lib/lecture';
 import { sanitizeRetrievedChunks } from '@/lib/ai/guardrails';
 import type { RetrievalDiagnostics } from '@/lib/ai/types';

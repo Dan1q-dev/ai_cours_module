@@ -3,6 +3,7 @@ import { getUsageSummary, initAiDatabase, maybeRunDbMaintenance } from '@/lib/ai
 import { hashApiKey, readApiKeyFromHeaders } from '@/lib/ai/request';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {

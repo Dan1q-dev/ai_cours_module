@@ -4,6 +4,7 @@ import { getQuotaConfig } from '@/lib/ai/quotas';
 import { getRuntimeCacheHealth } from '@/lib/ai/runtime-cache';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const CHECK_TIMEOUT_MS = Number(process.env.API_HEALTHCHECK_TIMEOUT_MS ?? 3000);
 

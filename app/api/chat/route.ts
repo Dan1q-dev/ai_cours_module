@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import OpenAI from 'openai';
 import {
   buildPrompt,
   buildSourceItems,
@@ -16,16 +15,15 @@ import { consumeQuota, estimateUsageCost, checkQuotaBudget, reserveQuotaRequest 
 import { estimateTokens, hashApiKey, jsonError, readApiKeyFromHeaders } from '@/lib/ai/request';
 import { retrieveRelevantChunksDetailed } from '@/lib/rag';
 import { retrieveIndexedCourseChunks } from '@/lib/ai/index-search';
+import { getOpenAiClient, isOpenAiConfigured } from '@/lib/ai/openai-client';
 import type { InputMessage, SupportedLanguage, UsageSummary } from '@/lib/ai/types';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const CHAT_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
 const MAX_HISTORY_MESSAGES = Number(process.env.AI_MAX_HISTORY_MESSAGES ?? 12);
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const encoder = new TextEncoder();
 
@@ -95,9 +93,11 @@ export async function POST(req: Request) {
     return jsonError('Хранилище AI-модуля недоступно.', 503);
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isOpenAiConfigured()) {
     return jsonError('OPENAI_API_KEY не настроен на сервере.', 500);
   }
+
+  const client = getOpenAiClient();
 
   let body: ChatRequestBody;
   try {
@@ -254,7 +254,7 @@ export async function POST(req: Request) {
         chunk_id: chunk.id,
         label: chunk.label,
         text: chunk.text,
-        score: chunk.score,
+        score: chunk.score ?? 0,
       })),
     );
 
@@ -358,7 +358,7 @@ export async function POST(req: Request) {
               chunk_id: chunk.id,
               label: chunk.label,
               text: chunk.text,
-              score: chunk.score,
+              score: chunk.score ?? 0,
             })),
           ),
         });

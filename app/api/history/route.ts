@@ -2,6 +2,7 @@ import { assertSessionOwnership, getHistory, initAiDatabase, maybeRunDbMaintenan
 import { hashApiKey, jsonError, readApiKeyFromHeaders } from '@/lib/ai/request';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {

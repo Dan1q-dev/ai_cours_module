@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import OpenAI from 'openai';
 import {
   completeCourseIndexVersion,
   initAiDatabase,
@@ -10,13 +9,12 @@ import {
 } from '@/lib/ai/db';
 import { INDEX_EMBEDDING_MODEL, extractMaterial, indexExtractedMaterials } from '@/lib/ai/material-ingestion';
 import { estimateUsageCost } from '@/lib/ai/quotas';
+import { getOpenAiClient, isOpenAiConfigured } from '@/lib/ai/openai-client';
 import { hashApiKey, jsonError, readApiKeyFromHeaders } from '@/lib/ai/request';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function GET(req: Request) {
   try {
@@ -48,9 +46,11 @@ export async function POST(req: Request) {
     return jsonError('Хранилище AI-модуля недоступно.', 503);
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isOpenAiConfigured()) {
     return jsonError('OPENAI_API_KEY не настроен на сервере.', 500);
   }
+
+  const client = getOpenAiClient();
 
   const form = await req.formData();
   const courseId = String(form.get('course_id') ?? '').trim();

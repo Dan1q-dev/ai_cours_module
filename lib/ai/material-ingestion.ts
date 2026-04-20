@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import mammoth from 'mammoth';
 import JSZip from 'jszip';
 import pdfParse from 'pdf-parse';
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 import { findExistingMaterialByHash, insertCourseChunk, insertCourseMaterial } from '@/lib/ai/db';
 import { estimateTokens } from '@/lib/ai/request';
 

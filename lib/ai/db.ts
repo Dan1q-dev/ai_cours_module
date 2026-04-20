@@ -1,10 +1,27 @@
-const DB_PROVIDER =
-  (process.env.AI_DB_PROVIDER ?? '').trim().toLowerCase() ||
-  ((process.env.DATABASE_URL ?? '').trim() ? 'postgres' : 'sqlite');
+type AiDbBackend = typeof import('@/lib/ai/db-postgres') | typeof import('@/lib/ai/db-sqlite');
 
-const backendPromise = DB_PROVIDER === 'postgres' ? import('@/lib/ai/db-postgres') : import('@/lib/ai/db-sqlite');
+let backendPromise: Promise<AiDbBackend> | null = null;
+let selectedProvider: string | null = null;
+
+function resolveDbProvider(): 'postgres' | 'sqlite' {
+  const configuredProvider = (process.env.AI_DB_PROVIDER ?? '').trim().toLowerCase();
+  if (configuredProvider === 'postgres' || configuredProvider === 'postgresql') {
+    return 'postgres';
+  }
+  if (configuredProvider === 'sqlite') {
+    return 'sqlite';
+  }
+  return (process.env.DATABASE_URL ?? '').trim() ? 'postgres' : 'sqlite';
+}
 
 async function getBackend() {
+  const provider = resolveDbProvider();
+  if (!backendPromise || selectedProvider !== provider) {
+    selectedProvider = provider;
+    backendPromise = provider === 'postgres'
+      ? import('@/lib/ai/db-postgres')
+      : import('@/lib/ai/db-sqlite');
+  }
   return backendPromise;
 }
 

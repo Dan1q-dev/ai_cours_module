@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 import { getCourseChunksByVersion, resolveCourseIndexVersion, searchCourseChunkCandidates } from '@/lib/ai/db';
 import { sanitizeRetrievedChunks } from '@/lib/ai/guardrails';
 import type { RetrievalDiagnostics } from '@/lib/ai/types';
