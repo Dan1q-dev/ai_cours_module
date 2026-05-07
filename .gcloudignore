@@ -1,0 +1,9 @@
+.git
+node_modules
+.next
+.next-build
+tmp
+local-avatar/runs
+debug-next.log
+.env.local
+cloud-sql-proxy
