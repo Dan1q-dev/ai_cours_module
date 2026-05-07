@@ -1,0 +1,14 @@
+node_modules
+.next
+.next-build
+.env
+.env.local
+.git
+tmp
+data
+*.log
+*.tsbuildinfo
+__pycache__
+*.pyc
+runs
+local-avatar/runs

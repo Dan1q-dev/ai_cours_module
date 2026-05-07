@@ -1,0 +1,52 @@
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    AVATAR_ENGINE=musetalk \
+    MUSE_TALK_ROOT=/app/MuseTalk \
+    MUSE_TALK_PYTHON=python \
+    AVATAR_SOURCE_ASSET=/app/assets/avatar/teacher.png \
+    AVATAR_RESULTS_DIR=/tmp/avatar-runs \
+    AVATAR_TIMEOUT_SEC=3600
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    ffmpeg \
+    git \
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
+    libsm6 \
+    libsndfile1 \
+    libxext6 \
+    libxrender1 \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/local/bin/python \
+    && python -m pip install --upgrade pip setuptools wheel
+
+COPY local-avatar/requirements.txt /tmp/local-avatar-requirements.txt
+
+RUN python -m pip install --no-cache-dir \
+    torch==2.5.1 \
+    torchvision==0.20.1 \
+    torchaudio==2.5.1 \
+    --index-url https://download.pytorch.org/whl/cu124 \
+    && python -m pip install --no-cache-dir -r /tmp/local-avatar-requirements.txt
+
+COPY . /app
+
+RUN if [ -f /app/MuseTalk/requirements.txt ]; then \
+      python -m pip install --no-cache-dir -r /app/MuseTalk/requirements.txt; \
+    fi \
+    && mkdir -p /tmp/avatar-runs
+
+WORKDIR /app/local-avatar
+
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]

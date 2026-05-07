@@ -146,4 +146,89 @@ curl -N -i "$BASE_URL/api/chat" \
   }'
 ```
 
+### Deploy avatar renderer to Cloud Run GPU
+
+`ai-gateway` остаётся обычным Cloud Run service без GPU. Видео-рендер аватара разворачивается отдельно как `local-avatar` на Cloud Run GPU, а gateway отправляет туда WAV-аудио. Для Cloud Run режима gateway используйте `AVATAR_TTS_PROVIDER=openai`, чтобы `/api/avatar` генерировал WAV через OpenAI TTS API и передавал его в `LOCAL_AVATAR_URL=/render`.
+
+Перед build убедитесь, что `MuseTalk/` и нужные checkpoint/model файлы доступны в Docker build context. Dockerfile установит `MuseTalk/requirements.txt`, если файл присутствует.
+
+```bash
+PROJECT_ID=project-f3d2b277-4ce4-4023-8c6
+REGION=europe-west4
+REPO=ai-module
+IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/local-avatar:latest
+```
+
+Создать Artifact Registry repository, если его ещё нет:
+
+```bash
+gcloud artifacts repositories create $REPO \
+  --project=$PROJECT_ID \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="AI module containers"
+```
+
+Собрать и опубликовать image:
+
+```bash
+gcloud builds submit . \
+  --project=$PROJECT_ID \
+  --region=$REGION \
+  --config=cloudbuild.avatar.yaml \
+  --substitutions=_IMAGE=$IMAGE
+```
+
+Развернуть GPU service:
+
+```bash
+gcloud run deploy local-avatar \
+  --project=$PROJECT_ID \
+  --region=$REGION \
+  --image=$IMAGE \
+  --allow-unauthenticated \
+  --execution-environment=gen2 \
+  --gpu=1 \
+  --gpu-type=nvidia-l4 \
+  --cpu=4 \
+  --memory=16Gi \
+  --no-cpu-throttling \
+  --no-gpu-zonal-redundancy \
+  --timeout=3600 \
+  --concurrency=1 \
+  --max-instances=1 \
+  --set-env-vars=AVATAR_ENGINE=musetalk,MUSE_TALK_ROOT=/app/MuseTalk,MUSE_TALK_PYTHON=python,AVATAR_RESULTS_DIR=/tmp/avatar-runs,AVATAR_TIMEOUT_SEC=3600
+```
+
+Проверить avatar service:
+
+```bash
+AVATAR_URL=$(gcloud run services describe local-avatar \
+  --project=$PROJECT_ID \
+  --region=$REGION \
+  --format='value(status.url)')
+
+curl "$AVATAR_URL/health"
+```
+
+Обновить `ai-gateway`, чтобы `/api/avatar` использовал OpenAI TTS и Cloud Run avatar renderer:
+
+```bash
+gcloud run services update ai-gateway \
+  --project=$PROJECT_ID \
+  --region=$REGION \
+  --update-env-vars=AVATAR_TTS_PROVIDER=openai,OPENAI_TTS_MODEL=gpt-4o-mini-tts,OPENAI_TTS_VOICE=alloy,LOCAL_AVATAR_URL=$AVATAR_URL/render,AVATAR_TIMEOUT_SEC=3600
+```
+
+Проверить gateway avatar endpoint:
+
+```bash
+BASE_URL=https://ai-gateway-443288396214.europe-west4.run.app
+
+curl -X POST "$BASE_URL/api/avatar" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Здравствуйте. Я AI-аватар учебного модуля. Сейчас демонстрируется генерация видеоответа в Google Cloud.","language":"ru"}' \
+  --output avatar-demo.mp4
+```
+
 Примеры запросов и детали интеграции смотри в `docs/API_INTEGRATION.md`.
