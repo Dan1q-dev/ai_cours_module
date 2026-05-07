@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { Agent } from 'undici';
 import OpenAI from 'openai';
 
 const LOCAL_TTS_URL = process.env.LOCAL_TTS_URL ?? 'http://127.0.0.1:8002/synthesize';
@@ -12,12 +11,6 @@ const AVATAR_TIMEOUT_MS = Number(
   process.env.AVATAR_TIMEOUT_MS ?? Number(process.env.AVATAR_TIMEOUT_SEC ?? 3600) * 1000,
 );
 const MAX_TEXT_LENGTH = 1600;
-const UNDICI_LONG_TIMEOUT_MS = Math.max(AVATAR_TIMEOUT_MS + 60000, 360000);
-const longFetchAgent = new Agent({
-  headersTimeout: UNDICI_LONG_TIMEOUT_MS,
-  bodyTimeout: UNDICI_LONG_TIMEOUT_MS,
-  connectTimeout: 30000,
-});
 const RUSSIAN_LANGUAGE = 'ru';
 
 function badRequest(message: string) {
@@ -57,9 +50,6 @@ async function fetchWithTimeout(
     return await fetch(url, {
       ...init,
       signal: controller.signal,
-      // Avoid Node/undici default 300s headers timeout for long avatar renders.
-      // @ts-expect-error undici dispatcher is available in Node runtime.
-      dispatcher: longFetchAgent,
     });
   } finally {
     clearTimeout(timeout);
