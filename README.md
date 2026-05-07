@@ -197,7 +197,7 @@ gcloud run deploy local-avatar \
   --timeout=3600 \
   --concurrency=1 \
   --max-instances=1 \
-  --set-env-vars=AVATAR_ENGINE=musetalk,MUSE_TALK_ROOT=/app/MuseTalk,MUSE_TALK_PYTHON=python,AVATAR_RESULTS_DIR=/tmp/avatar-runs,AVATAR_TIMEOUT_SEC=3600
+  --set-env-vars=AVATAR_ENGINE=musetalk,MUSE_TALK_ROOT=/app/MuseTalk,MUSE_TALK_PYTHON=python,MUSE_TALK_VERSION=v15,MUSE_TALK_UNET_MODEL_PATH=/app/MuseTalk/models/musetalkV15/unet.pth,MUSE_TALK_UNET_CONFIG_PATH=/app/MuseTalk/models/musetalkV15/musetalk.json,AVATAR_RESULTS_DIR=/tmp/avatar-runs,AVATAR_TIMEOUT_SEC=3600
 ```
 
 Проверить avatar service:

@@ -7,3 +7,7 @@ local-avatar/runs
 debug-next.log
 .env.local
 cloud-sql-proxy
+MuseTalk/models/.cache
+MuseTalk/models/**/.cache
+MuseTalk/models/musetalk/pytorch_model.bin
+MuseTalk/models/syncnet
