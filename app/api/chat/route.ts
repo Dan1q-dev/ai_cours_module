@@ -21,7 +21,7 @@ import type { InputMessage, SupportedLanguage, UsageSummary } from '@/lib/ai/typ
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const CHAT_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+const CHAT_MODEL = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
 const MAX_HISTORY_MESSAGES = Number(process.env.AI_MAX_HISTORY_MESSAGES ?? 12);
 
 

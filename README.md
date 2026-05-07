@@ -114,6 +114,7 @@ npm run test:api
 Локальные media-зависимости `STT`, `TTS` и `avatar` по умолчанию optional и не валят `/api/health`, если не развернуты рядом с gateway:
 
 ```env
+OPENAI_MODEL=gpt-5.4-mini
 API_HEALTH_REQUIRE_LOCAL_SERVICES=false
 ```
 
