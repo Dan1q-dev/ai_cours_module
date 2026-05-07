@@ -11,7 +11,9 @@ const CHECK_TIMEOUT_MS = Number(process.env.API_HEALTHCHECK_TIMEOUT_MS ?? 3000);
 type ServiceCheck = {
   name: 'stt' | 'tts' | 'avatar';
   target: string;
-  status: 'ok' | 'error';
+  configured: boolean;
+  required: boolean;
+  status: 'ok' | 'error' | 'skipped';
   httpStatus?: number;
   details?: string;
 };
@@ -31,8 +33,11 @@ function withTimeout<T>(task: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
-function deriveHealthUrl(rawUrl: string, fallback: string): string {
+function deriveHealthUrl(rawUrl: string | undefined, fallback: string): string {
   try {
+    if (!rawUrl) {
+      return fallback;
+    }
     const parsed = new URL(rawUrl);
     parsed.pathname = '/health';
     parsed.search = '';
@@ -43,13 +48,33 @@ function deriveHealthUrl(rawUrl: string, fallback: string): string {
   }
 }
 
-async function checkService(name: ServiceCheck['name'], target: string): Promise<ServiceCheck> {
+async function checkService(
+  name: ServiceCheck['name'],
+  target: string,
+  configured: boolean,
+  required: boolean,
+): Promise<ServiceCheck> {
+  if (!configured) {
+    return {
+      name,
+      target,
+      configured,
+      required,
+      status: required ? 'error' : 'skipped',
+      details: required
+        ? 'local service URL is not configured'
+        : 'local service URL is not configured; optional dependency skipped',
+    };
+  }
+
   try {
     const response = await withTimeout(fetch(target, { method: 'GET' }), CHECK_TIMEOUT_MS);
     if (!response.ok) {
       return {
         name,
         target,
+        configured,
+        required,
         status: 'error',
         httpStatus: response.status,
         details: `health endpoint returned ${response.status}`,
@@ -59,6 +84,8 @@ async function checkService(name: ServiceCheck['name'], target: string): Promise
     return {
       name,
       target,
+      configured,
+      required,
       status: 'ok',
       httpStatus: response.status,
     };
@@ -67,39 +94,55 @@ async function checkService(name: ServiceCheck['name'], target: string): Promise
     return {
       name,
       target,
+      configured,
+      required,
       status: 'error',
       details: message,
     };
   }
 }
 
+function isVectorHealthy(db: Awaited<ReturnType<typeof getDbHealth>>) {
+  if (!('vector' in db)) {
+    return true;
+  }
+
+  return db.vector?.status === 'ok';
+}
+
 export async function GET() {
   await initAiDatabase();
   await maybeRunDbMaintenance();
 
+  const localServicesRequired = process.env.API_HEALTH_REQUIRE_LOCAL_SERVICES === 'true';
+  const sttConfigured = Boolean((process.env.LOCAL_STT_URL ?? '').trim());
+  const ttsConfigured = Boolean((process.env.LOCAL_TTS_URL ?? '').trim());
+  const avatarConfigured = Boolean((process.env.LOCAL_AVATAR_URL ?? '').trim());
   const sttHealthUrl = deriveHealthUrl(
-    process.env.LOCAL_STT_URL ?? 'http://127.0.0.1:8001/transcribe',
+    process.env.LOCAL_STT_URL,
     'http://127.0.0.1:8001/health',
   );
   const ttsHealthUrl = deriveHealthUrl(
-    process.env.LOCAL_TTS_URL ?? 'http://127.0.0.1:8002/synthesize',
+    process.env.LOCAL_TTS_URL,
     'http://127.0.0.1:8002/health',
   );
   const avatarHealthUrl = deriveHealthUrl(
-    process.env.LOCAL_AVATAR_URL ?? 'http://127.0.0.1:8003/render',
+    process.env.LOCAL_AVATAR_URL,
     'http://127.0.0.1:8003/health',
   );
 
   const [stt, tts, avatar] = await Promise.all([
-    checkService('stt', sttHealthUrl),
-    checkService('tts', ttsHealthUrl),
-    checkService('avatar', avatarHealthUrl),
+    checkService('stt', sttHealthUrl, sttConfigured, localServicesRequired),
+    checkService('tts', ttsHealthUrl, ttsConfigured, localServicesRequired),
+    checkService('avatar', avatarHealthUrl, avatarConfigured, localServicesRequired),
   ]);
 
   const openAiConfigured = Boolean((process.env.OPENAI_API_KEY ?? '').trim());
   const serviceResults = [stt, tts, avatar];
-  const allServicesOk = serviceResults.every((item) => item.status === 'ok');
+  const requiredServicesOk =
+    !localServicesRequired || serviceResults.every((item) => item.status === 'ok');
   const db = await getDbHealth();
+  const vectorOk = isVectorHealthy(db);
   const runtimeCache = await getRuntimeCacheHealth();
   const quota = {
     status: db.status === 'ok' ? ('ok' as const) : ('error' as const),
@@ -107,7 +150,7 @@ export async function GET() {
     cache: runtimeCache,
   };
   const overallStatus =
-    allServicesOk && openAiConfigured && db.status === 'ok' ? 'ok' : 'degraded';
+    requiredServicesOk && openAiConfigured && db.status === 'ok' && vectorOk ? 'ok' : 'degraded';
 
   return NextResponse.json(
     {
@@ -123,6 +166,7 @@ export async function GET() {
       database: db,
       quota,
       services: {
+        required: localServicesRequired,
         stt,
         tts,
         avatar,

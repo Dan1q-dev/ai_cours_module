@@ -85,7 +85,6 @@ export async function POST(req: Request) {
         body: proxyFormData,
         signal: controller.signal,
         // Use explicit undici timeouts for long-running local STT calls.
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error dispatcher is available in Node runtime.
         dispatcher: sttFetchAgent,
       });

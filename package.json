@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "prisma generate",
-    "build": "cross-env NEXT_DIST_DIR=.next-build next build",
-    "start": "cross-env NEXT_DIST_DIR=.next-build next start",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
     "start:all": "powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1",
     "stop:all": "powershell -ExecutionPolicy Bypass -File scripts/stop-all.ps1",
     "lint": "next lint",

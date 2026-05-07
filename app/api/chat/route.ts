@@ -29,9 +29,11 @@ const encoder = new TextEncoder();
 
 type ChatRequestBody = {
   session_id?: string;
+  sessionId?: string;
   message_id?: string;
   client_metadata?: Record<string, unknown>;
   messages?: InputMessage[];
+  message?: string;
   locateInLecture?: boolean;
   course_id?: string;
   course_version_id?: string;
@@ -106,12 +108,16 @@ export async function POST(req: Request) {
     return jsonError('Тело запроса должно быть корректным JSON.', 400);
   }
 
-  const sessionId = String(body.session_id ?? '').trim();
+  const sessionId = String(body.session_id ?? body.sessionId ?? '').trim();
   if (!sessionId) {
     return jsonError('Поле session_id обязательно.', 400);
   }
 
-  const validated = validateMessages(body.messages);
+  const inputMessages =
+    Array.isArray(body.messages) || typeof body.message !== 'string'
+      ? body.messages
+      : [{ role: 'user' as const, content: body.message }];
+  const validated = validateMessages(inputMessages);
   if (!validated.ok) {
     return validated.response;
   }

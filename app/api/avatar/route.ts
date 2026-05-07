@@ -42,7 +42,6 @@ async function fetchWithTimeout(
       ...init,
       signal: controller.signal,
       // Avoid Node/undici default 300s headers timeout for long avatar renders.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error undici dispatcher is available in Node runtime.
       dispatcher: longFetchAgent,
     });

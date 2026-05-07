@@ -107,4 +107,42 @@ npm run test:api
 
 Этот репозиторий не является финальным frontend/backend приложением. Это AI-модуль, который должен интегрироваться в большую систему и позже разворачиваться в Google Cloud за основным backend-приложением.
 
+### Cloud Run health behavior
+
+В Cloud Run ядро gateway считается healthy, когда жив сам gateway, настроен `OPENAI_API_KEY`, доступна database и готов `pgvector`/vector слой.
+
+Локальные media-зависимости `STT`, `TTS` и `avatar` по умолчанию optional и не валят `/api/health`, если не развернуты рядом с gateway:
+
+```env
+API_HEALTH_REQUIRE_LOCAL_SERVICES=false
+```
+
+Чтобы сделать `STT`/`TTS`/`avatar` обязательными для readiness:
+
+```env
+API_HEALTH_REQUIRE_LOCAL_SERVICES=true
+```
+
+Проверка health:
+
+```bash
+curl -i "$BASE_URL/api/health"
+```
+
+Проверка chat canonical request shape:
+
+```bash
+curl -N -i "$BASE_URL/api/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "test-session-1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Привет, кратко представься"
+      }
+    ]
+  }'
+```
+
 Примеры запросов и детали интеграции смотри в `docs/API_INTEGRATION.md`.
