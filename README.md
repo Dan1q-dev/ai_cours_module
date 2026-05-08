@@ -157,6 +157,7 @@ PROJECT_ID=project-f3d2b277-4ce4-4023-8c6
 REGION=europe-west4
 REPO=ai-module
 IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/local-avatar:latest
+MUSE_TALK_COMMAND_TEMPLATE='python -m scripts.inference --inference_config {config_path} --result_dir {result_dir} --version {version} --unet_model_path {unet_model_path} --unet_config {unet_config} --batch_size 16 --use_saved_coord --saved_coord'
 ```
 
 Создать Artifact Registry repository, если его ещё нет:
@@ -190,15 +191,18 @@ gcloud run deploy local-avatar \
   --execution-environment=gen2 \
   --gpu=1 \
   --gpu-type=nvidia-l4 \
-  --cpu=4 \
-  --memory=16Gi \
+  --cpu=8 \
+  --memory=32Gi \
   --no-cpu-throttling \
   --no-gpu-zonal-redundancy \
   --timeout=3600 \
   --concurrency=1 \
+  --min-instances=1 \
   --max-instances=1 \
-  --set-env-vars=AVATAR_ENGINE=musetalk,MUSE_TALK_ROOT=/app/MuseTalk,MUSE_TALK_PYTHON=python,MUSE_TALK_VERSION=v15,MUSE_TALK_UNET_MODEL_PATH=/app/MuseTalk/models/musetalkV15/unet.pth,MUSE_TALK_UNET_CONFIG_PATH=/app/MuseTalk/models/musetalkV15/musetalk.json,AVATAR_RESULTS_DIR=/tmp/avatar-runs,AVATAR_TIMEOUT_SEC=3600
+  --set-env-vars="AVATAR_ENGINE=musetalk,MUSE_TALK_ROOT=/app/MuseTalk,MUSE_TALK_PYTHON=python,MUSE_TALK_VERSION=v15,MUSE_TALK_UNET_MODEL_PATH=/app/MuseTalk/models/musetalkV15/unet.pth,MUSE_TALK_UNET_CONFIG_PATH=/app/MuseTalk/models/musetalkV15/musetalk.json,AVATAR_RESULTS_DIR=/tmp/avatar-runs,AVATAR_TIMEOUT_SEC=3600,OMP_NUM_THREADS=8,MKL_NUM_THREADS=8,OPENBLAS_NUM_THREADS=8,NUMEXPR_NUM_THREADS=8,CUDA_MODULE_LOADING=LAZY,TORCH_CUDNN_V8_API_ENABLED=1,MUSE_TALK_COMMAND_TEMPLATE=$MUSE_TALK_COMMAND_TEMPLATE"
 ```
+
+`--min-instances=1` держит один GPU-инстанс прогретым. Это снижает cold-start latency, но GPU service может стоить денег даже без активных запросов. `MUSE_TALK_COMMAND_TEMPLATE` не меняет quality settings MuseTalk и включает кеширование координат лица для фиксированного avatar asset.
 
 Проверить avatar service:
 
